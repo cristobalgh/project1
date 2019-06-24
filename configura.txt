@@ -1,0 +1,8 @@
+#ejecutar asi: . configura.txt
+#python3 -m venv myvirtualenv
+#source myvirtualenv/bin/activate
+pip install -r requirements.txt
+export FLASK_ENV=development
+export FLASK_APP=application.py
+export DATABASE_URL=postgres://cmvhhdaqdfolel:5c73a893a7338182dbe7bbe391d53f39c5b0ffc4f0798f382d9a3ef3704a75c6@ec2-23-21-91-183.compute-1.amazonaws.com:5432/d54otjn4tdnqdl
+export GOODREADS_KEY=pIE93ut7872nrDatDk7ThQ
