@@ -1,5 +1,4 @@
-import os, json
-
+import os
 from flask import Flask, session, redirect, render_template, request, jsonify, flash, abort
 from flask_session import Session
 from sqlalchemy import create_engine
