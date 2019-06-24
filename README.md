@@ -5,7 +5,7 @@
 
 ## Use the app on Heroku
 
-### https://book-reviews-cs50-project1.herokuapp.com/
+### https://p1bookscgh.herokuapp.com/
 
 ![](https://i.imgur.com/mB3cLV1.png)
 
