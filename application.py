@@ -1,13 +1,10 @@
 import os
+import requests
 from flask import Flask, session, redirect, render_template, request, jsonify, flash, abort
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-
 from werkzeug.security import check_password_hash, generate_password_hash
-
-import requests
-
 from helpers import login_required
 
 app = Flask(__name__)
@@ -15,6 +12,9 @@ app = Flask(__name__)
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is not set")
+
+if not os.getenv("GOODREADS_KEY"):
+    raise RuntimeError("GOODREADS_KEY is not set")
 
 # Configure session to use filesystem
 app.config["SESSION_PERMANENT"] = False
@@ -61,7 +61,7 @@ def login():
         # https://docs.sqlalchemy.org/en/latest/core/connections.html#sqlalchemy.engine.ResultProxy
         rows = db.execute("SELECT * FROM users WHERE username = :username",
                             {"username": username})
-        
+
         result = rows.fetchone()
 
         # Ensure username exists and password is correct
@@ -92,10 +92,10 @@ def logout():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """ Register user """
-    
+
     # Forget any user_id
     session.clear()
-    
+
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
 
@@ -115,20 +115,20 @@ def register():
         elif not request.form.get("password"):
             return render_template("error.html", message="must provide password")
 
-        # Ensure confirmation wass submitted 
+        # Ensure confirmation wass submitted
         elif not request.form.get("confirmation"):
             return render_template("error.html", message="must confirm password")
 
         # Check passwords are equal
         elif not request.form.get("password") == request.form.get("confirmation"):
             return render_template("error.html", message="passwords didn't match")
-        
+
         # Hash user's password to store in DB
         hashedPassword = generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=8)
-        
+
         # Insert register into DB
         db.execute("INSERT INTO users (username, hash) VALUES (:username, :password)",
-                            {"username":request.form.get("username"), 
+                            {"username":request.form.get("username"),
                              "password":hashedPassword})
 
         # Commit changes to database
@@ -158,17 +158,17 @@ def search():
     # Capitalize all words of input for search
     # https://docs.python.org/3.7/library/stdtypes.html?highlight=title#str.title
     query = query.title()
-    
+
     rows = db.execute("SELECT isbn, title, author, year FROM books WHERE \
                         isbn LIKE :query OR \
                         title LIKE :query OR \
                         author LIKE :query LIMIT 15",
                         {"query": query})
-    
+
     # Books not founded
     if rows.rowcount == 0:
         return render_template("error.html", message="we can't find books with that description.")
-    
+
     # Fetch all the results
     books = rows.fetchall()
 
@@ -183,11 +183,11 @@ def book(isbn):
 
         # Save current user info
         currentUser = session["user_id"]
-        
+
         # Fetch form data
         rating = request.form.get("rating")
         comment = request.form.get("comment")
-        
+
         # Search book_id by ISBN
         row = db.execute("SELECT id FROM books WHERE isbn = :isbn",
                         {"isbn": isbn})
@@ -203,7 +203,7 @@ def book(isbn):
 
         # A review already exists
         if row2.rowcount == 1:
-            
+
             flash('You already submitted a review for this book', 'warning')
             return redirect("/book/" + isbn)
 
@@ -212,9 +212,9 @@ def book(isbn):
 
         db.execute("INSERT INTO reviews (user_id, book_id, comment, rating) VALUES \
                     (:user_id, :book_id, :comment, :rating)",
-                    {"user_id": currentUser, 
-                    "book_id": bookId, 
-                    "comment": comment, 
+                    {"user_id": currentUser,
+                    "book_id": bookId,
+                    "comment": comment,
                     "rating": rating})
 
         # Commit transactions to DB and close the connection
@@ -223,7 +223,7 @@ def book(isbn):
         flash('Review submitted!', 'info')
 
         return redirect("/book/" + isbn)
-    
+
     # Take the book ISBN and redirect to his page (GET)
     else:
 
@@ -237,7 +237,7 @@ def book(isbn):
 
         # Read API key from env variable
         key = os.getenv("GOODREADS_KEY")
-        
+
         # Query the api with key and ISBN as parameters
         query = requests.get("https://www.goodreads.com/book/review_counts.json",
                 params={"key": key, "isbns": isbn})
@@ -299,7 +299,7 @@ def api_call(isbn):
         #return jsonify({"Error": "Invalid book ISBN"})
         abort(404)
 
-    # Fetch result from RowProxy    
+    # Fetch result from RowProxy
     tmp = row.fetchone()
 
     # Convert to dict
