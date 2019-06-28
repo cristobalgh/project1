@@ -1,6 +1,6 @@
 import os
 import requests
-from flask import Flask, session, redirect, render_template, request, jsonify, flash, abort
+from flask import Flask, session, redirect, render_template, request, jsonify, flash
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -57,8 +57,7 @@ def login():
         elif not request.form.get("password"):
             return render_template("error.html", message="must provide password")
 
-        # Query database for username (http://zetcode.com/db/sqlalchemy/rawsql/)
-        # https://docs.sqlalchemy.org/en/latest/core/connections.html#sqlalchemy.engine.ResultProxy
+        # Query database for username
         rows = db.execute("SELECT * FROM users WHERE username = :username",
                             {"username": username})
 
@@ -155,8 +154,7 @@ def search():
     # Take input and add a wildcard
     query = "%" + request.args.get("book") + "%"
 
-    # Capitalize all words of input for search
-    # https://docs.python.org/3.7/library/stdtypes.html?highlight=title#str.title
+    # Capitalize all words (not letters) of input for search with this method title()
     query = query.title()
 
     rows = db.execute("SELECT isbn, title, author, year FROM books WHERE \
@@ -296,8 +294,7 @@ def api_call(isbn):
 
     # Error checking
     if row.rowcount != 1:
-        #return jsonify({"Error": "Invalid book ISBN"})
-        abort(404)
+        return jsonify({"Error": "Invalid book ISBN"}), 404
 
     # Fetch result from RowProxy
     tmp = row.fetchone()
@@ -306,7 +303,6 @@ def api_call(isbn):
     result = dict(tmp.items())
 
     # Round Avg Score to 2 decimal.
-    # https://floating-point-gui.de/languages/python
     result['average_score'] = float('%.2f'%(result['average_score']))
     result['year']=int(result['year'])
     return jsonify(result)
